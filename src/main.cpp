@@ -1,32 +1,31 @@
-//carregamento das bibliotecas a serem utilizadas:
 #include <Arduino.h>
 #include <PubSubClient.h>
 #include <WiFi.h>
 #include "DHT.h"
 #include "SPIFFS.h"
+#include <BearSSLHelpers.h>
+#include <CertStoreBearSSL.h>
 #include <WiFiClientSecure.h>
 
-// //nomeação dos pinos do hardware ESP32
-#define LED 32 //variável de saída: fechamento do relé e acionamento do LED. Pino 32
-#define SENSOR 4 //variável de entrada 1: sensor de temperatura/umidade: um só sensor fornecerá dados para duas variáveis de entrada: temperatura e umidade. Pino 4
+#define LED 32
+#define SENSOR 4
+#define DHTPIN 2
 #define DHTTYPE DHT11
 
-// informações da rede wi-fi
 const char *ssid = "Gustavo's Galaxy M22";
 const char *pass = "trovao07";
 const char *brokerUser = "gustavoparreira";
 const char *brokerPass = "trovao07";
 const char *broker = "r6062f16.ala.us-east-1.emqxsl.com";
 
-WiFiClient espClient;
+WiFiClientSecure espClient;
 PubSubClient client(espClient);
 unsigned long lastMsg = 0;
 #define MSG_BUFFER_SIZE (50)
 char msg[MSG_BUFFER_SIZE];
 
-dht DHT; // inicializando o sensor.
+dht DHT;
 
-// funções de configuração
 void setupWiFi() {
   delay(1000);
   Serial.print("\nConnecting to ");
@@ -49,7 +48,7 @@ void reconnect() {
     if (client.connect("koikoikoi", brokerUser, brokerPass)) {
       Serial.print("\nConnected to ");
       Serial.println(broker);
-      client.subscribe("8aiswz6279/publisher"); //SE CONECTADO AO SERVIDOR MQTT, INSCREVE-SE A ESSE TÓPICO
+      client.subscribe("8aiswz6279/publisher");
     } else {
       Serial.println("\nTrying to connect again!");
       delay(5000);
@@ -57,101 +56,91 @@ void reconnect() {
   }
 }
 
-
-
-void callback (char* topic, byte* payload, unsigned int length) 
-{
-  Serial.print ("Message arrived [");
-  Serial.print (topic);
-  Serial.print (" ");
+void callback(char *topic, byte *payload, unsigned int length) {
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
   for (int i = 0; i < length; i++)
-    Serial.print((char) payload[i]);
+    Serial.print((char)payload[i]);
   Serial.println();
 
-if ((char) payload [0] == 'L') 
-{
-  digitalWrite(LED, HIGH); //caso receba um L, altera a variável TESTE_SAIDA para HIGH
-  snprintf (msg, MSG_BUFFER_SIZE, "O LED está aceso");
-  Serial.print("Publica mensagem: ");
-  Serial.println(msg);
-  client.publish("8aiswz6279/led", msg);
-}
+  if ((char)payload[0] == 'L') {
+    digitalWrite(LED, HIGH);
+    snprintf(msg, MSG_BUFFER_SIZE, "O LED está aceso");
+    Serial.print("Publica mensagem: ");
+    Serial.println(msg);
+    client.publish("8aiswz6279/led", msg);
+  }
 
-
-if ((char) payload [0] == 'l') //caso receba um l(éle minúsculo), altera a variável TESTE_SAIDA para LOW
-{
-  digitalWrite(LED, LOW);
-  snprintf (msg, MSG_BUFFER_SIZE, "O LED está apagado");
-  Serial.print("Publica mensagem: ");
-  Serial.println(msg);
-  client.publish("8aiswz6279/led", msg);
+  if ((char)payload[0] == 'l') {
+    digitalWrite(LED, LOW);
+    snprintf(msg, MSG_BUFFER_SIZE, "O LED está apagado");
+    Serial.print("Publica mensagem: ");
+    Serial.println(msg);
+    client.publish("8aiswz6279/led", msg);
+  }
 }
-}
-
 
 void setup() {
-  // //CONFIGURAÇÃO DE CADA PINO DEFINIDO ANTERIORMENTE PARA FUNCIONAREM COMO ENTRADAS OU SAÍDAS
-  pinMode(LED,OUTPUT);
-  pinMode(SENSOR,INPUT);
+  pinMode(LED, OUTPUT);
+  pinMode(SENSOR, INPUT);
 
-  // Inicializa o sistema de arquivos SPIFFS
   if (!SPIFFS.begin(true)) {
     Serial.println("Erro ao montar sistema de arquivos SPIFFS!");
     return;
   }
 
-  // Carrega o certificado CA da memória Flash SPIFFS
   File caFile = SPIFFS.open("/emqxsl-ca.crt", "r");
   if (!caFile) {
     Serial.println("Erro ao abrir arquivo de certificado CA!");
     return;
   }
 
-  // Lê o conteúdo do arquivo de certificado CA
-  String caCert = caFile.readString();
-  caFile.close();
+  size_t size = caFile.size();
+  uint8_t certBuf[size];
+  size_t bytesRead = caFile.read(certBuf, size);
+  if (bytesRead != size) {
+    Serial.println("Erro ao ler o arquivo de certificado CA!");
+    return;
+  }
 
-  // Configuração do cliente MQTT
+  espClient.setTrustAnchors(new CertStoreBearSSL(certBuf, size));
+
   client.setServer(broker, 8883);
   client.setCallback(callback);
-
-  // Configuração de segurança TLS/SSL
-  espClient.setCACert(caCert.c_str());
 
   Serial.begin(115200);
   setupWiFi();
 }
 
-
 void loop() {
-
   double t = DHT.temperature;
   double h = DHT.humidity;
 
   int sns = digitalRead(LED);
-  if (sns == 1)
-  {
+  if (sns == 1) {
     Serial.println("Sensor de Porta Fechado");
     snprintf(msg, MSG_BUFFER_SIZE, "Porta Fechada");
     client.publish("8aiswz6279/porta", msg);
-} else {
-
+  } else {
     Serial.println("Sensor de Porta Aberto");
-    snprintf (msg, MSG_BUFFER_SIZE, "Porta Aberta");
+    snprintf(msg, MSG_BUFFER_SIZE, "Porta Aberta");
     client.publish("8aiswz6279/porta", msg);
-}
-    Serial.print ("Temperatura: ");
-    Serial.print(t);
-    Serial.println(F("C"));
-    sprintf(msg, "%f", t);
-    client.publish("8aiswz6279/temperatura", msg);
+  }
 
-    delay(3000);
+  Serial.print("Temperatura: ");
+  Serial.print(t);
+  Serial.println(F("C"));
+  snprintf(msg, MSG_BUFFER_SIZE, "%f", t);
+  client.publish("8aiswz6279/temperatura", msg);
 
-    if (!client.connected())
-      reconnect();
-    client.loop();
+  delay(3000);
+
+  if (!client.connected())
+    reconnect();
+  client.loop();
 }
+
 
 // put function definitions here:
 int myFunction(int x, int y) {
