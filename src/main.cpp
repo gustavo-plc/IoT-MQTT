@@ -66,7 +66,7 @@ void reconnect() {
   while (!client.connected()) {
     Serial.print("\nConnecting to ");
     Serial.println(broker);
-    if (client.connect("koikoikoi", brokerUser, brokerPass)) {
+    if (client.connect("MQTT-ESP32", brokerUser, brokerPass)) {
       Serial.print("\nConnected to ");
       Serial.println(broker);
       client.subscribe("8aiswz6279/publisher");
