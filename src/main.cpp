@@ -4,6 +4,7 @@
 #include <WiFi.h>
 #include "DHT.h"
 #include "SPIFFS.h"
+#include <WiFiClientSecure.h>
 
 // //nomeação dos pinos do hardware ESP32
 #define LED 32 //variável de saída: fechamento do relé e acionamento do LED. Pino 32
@@ -92,31 +93,33 @@ void setup() {
   // //CONFIGURAÇÃO DE CADA PINO DEFINIDO ANTERIORMENTE PARA FUNCIONAREM COMO ENTRADAS OU SAÍDAS
   pinMode(LED,OUTPUT);
   pinMode(SENSOR,INPUT);
-  
-  Serial.begin(115200);
-  setupWiFi();
-  client.setServer(broker, 1883); //local para inserção da porta para conexão
+
+  // Inicializa o sistema de arquivos SPIFFS
+  if (!SPIFFS.begin(true)) {
+    Serial.println("Erro ao montar sistema de arquivos SPIFFS!");
+    return;
+  }
+
+  // Carrega o certificado CA da memória Flash SPIFFS
+  File caFile = SPIFFS.open("/emqxsl-ca.crt", "r");
+  if (!caFile) {
+    Serial.println("Erro ao abrir arquivo de certificado CA!");
+    return;
+  }
+
+  // Lê o conteúdo do arquivo de certificado CA
+  String caCert = caFile.readString();
+  caFile.close();
+
+  // Configuração do cliente MQTT
+  client.setServer(broker, 8883);
   client.setCallback(callback);
 
+  // Configuração de segurança TLS/SSL
+  espClient.setCACert(caCert.c_str());
 
-  if(!SPIFFS.begin(true)){
-    Serial.println("An Error has occurred while mounting SPIFFS");
-    return;
-  }
-  
-  File file = SPIFFS.open("/emqxsl-ca.crt");
-
-  if(!file){
-    Serial.println("Failed to open file for reading");
-    return;
-  }
-  
-  Serial.println("File Content:");
-
-  while(file.available()){
-    Serial.write(file.read());
-  }
-  file.close();
+  Serial.begin(115200);
+  setupWiFi();
 }
 
 
