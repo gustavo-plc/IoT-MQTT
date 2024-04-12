@@ -3,9 +3,9 @@
 #include <WiFi.h>
 #include "DHT.h"
 #include "SPIFFS.h"
-#include <BearSSLHelpers.h>
 #include <CertStoreBearSSL.h>
 #include <WiFiClientSecure.h>
+
 
 #define LED 32
 #define SENSOR 4
