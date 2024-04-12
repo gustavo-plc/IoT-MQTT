@@ -9,7 +9,7 @@
 #include "DHT.h"
 
 // //nomeação dos pinos do hardware ESP32
-// #define O_IRRIGA 32 //variável de saída fuzzy: fechamento do relé e acionamento da irrigação. Pino 32
+#define O_IRRIGA 32 //variável de saída fuzzy: fechamento do relé e acionamento da irrigação. Pino 32
 // #define I_TEMPUMI 4 //variável de entrada 1 fuzzy: sensor de temperatura/umidade: um só sensor fornecerá dados para duas variáveis de entrada: temperatura e umidade. Pino 4
 // #define I_UMISOLO 34 //variável de entrada 2 fuzzy: sensor de umidade do solo. Pino 34
 // #define DHTTYPE DHT11
