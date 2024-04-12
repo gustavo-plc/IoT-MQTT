@@ -2,15 +2,11 @@
 #include <Arduino.h>
 #include <PubSubClient.h>
 #include <WiFi.h>
-#include <stdlib.h>
-#include <inttypes.h>
-#include <stdio.h>
-#include <time.h>
 #include "DHT.h"
 
 // //nomeação dos pinos do hardware ESP32
 #define LED 32 //variável de saída: fechamento do relé e acionamento do LED. Pino 32
-#define DHT_DATA 4 //variável de entrada 1: sensor de temperatura/umidade: um só sensor fornecerá dados para duas variáveis de entrada: temperatura e umidade. Pino 4
+#define SENSOR 4 //variável de entrada 1: sensor de temperatura/umidade: um só sensor fornecerá dados para duas variáveis de entrada: temperatura e umidade. Pino 4
 #define DHTTYPE DHT11
 
 // informações da rede wi-fi
@@ -26,7 +22,8 @@ unsigned long lastMsg = 0;
 #define MSG_BUFFER_SIZE (50)
 char msg[MSG_BUFFER_SIZE];
 
-DHT dht(DHT_DATA, DHTTYPE);   //inicializando o sensor. 
+dht DHT; // inicializando o sensor.
+
 
 // funções de configuração
 void setupWiFi() {
@@ -92,14 +89,8 @@ if ((char) payload [0] == 'l') //caso receba um l(éle minúsculo), altera a var
 void setup() {
   // //CONFIGURAÇÃO DE CADA PINO DEFINIDO ANTERIORMENTE PARA FUNCIONAREM COMO ENTRADAS OU SAÍDAS
   pinMode(LED,OUTPUT);
-  // pinMode(I_TEMPUMI,INPUT);
-  // pinMode(I_UMISOLO,INPUT);
-
-  // // INICIALIZAÇÃO DA TRANSMISSÃO SERIAL NA TAXA DE 9600 bits por segundo
-  // Serial.begin(9600);
-  // Serial.println(F("Teste do DHT11!"));
-  // dht.begin();
-
+  pinMode(SENSOR,INPUT);
+  
   Serial.begin(115200);
   setupWiFi();
   client.setServer(broker, 1883); //local para inserção da porta para conexão
@@ -107,24 +98,34 @@ void setup() {
 }
 
 void loop() {
-  if (!client.connected())
-    reconnect();
-  client.loop();
 
-  // digitalWrite(O_IRRIGA, LOW);
-  // delay(2000);
-  // //leitura de umidade do ar e temperatura do sensor DHT11
-  // float umidadeAr = dht.readHumidity();
-  // float temperatura = dht.readTemperature();
+  double t = DHT.temperature;
+  double h = DHT.humidity;
 
-  // // Verificação de erros de leitura e informação via terminal
-  // if (isnan(umidadeAr) || isnan(temperatura)) {
-  //   Serial.println(F("Falha em ler dados do sensor!\n"));
-  //   return;
-  // }
+  int sns = digitalRead(LED);
+  if (sns == 1)
+  {
+    Serial.println("Sensor de Porta Fechado");
+    snprintf(msg, MSG_BUFFER_SIZE, "Porta Fechada");
+    client.publish("8aiswz6279/porta", msg);
+} else {
 
+    Serial.println("Sensor de Porta Aberto");
+    snprintf (msg, MSG_BUFFER_SIZE, "Porta Aberta");
+    client.publish("8aiswz6279/porta", msg);
 }
+    Serial.print ("Temperatura: ");
+    Serial.print(t);
+    Serial.println(F("C"));
+    sprintf(msg, "%f", t);
+    client.publish("8aiswz6279/temperatura", msg);
 
+    delay(3000);
+
+    if (!client.connected())
+      reconnect();
+    client.loop();
+}
 
 // put function definitions here:
 int myFunction(int x, int y) {
