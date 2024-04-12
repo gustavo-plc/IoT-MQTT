@@ -68,20 +68,20 @@ void callback (char* topic, byte* payload, unsigned int length)
 
 if ((char) payload [0] == 'L') 
 {
-  digitalWrite(LED, HIGH);
+  digitalWrite(TESTE_SAIDA, HIGH); //caso receba um L, altera a variável TESTE_SAIDA para HIGH
   snprintf (msg, MSG_BUFFER_SIZE, "O LED está aceso");
   Serial.print("Publica mensagem: ");
   Serial.println(msg);
-  client.publish("engeasier/led", msg);
+  client.publish("8aiswz6279/led", msg);
 }
 
-if ((char) payload [0] == '1') 
+if ((char) payload [0] == 'l') //caso receba um l(éle minúsculo), altera a variável TESTE_SAIDA para LOW
 {
-  digitalWrite(LED, LOW);
+  digitalWrite(TESTE_SAIDA, LOW);
   snprintf (msg, MSG_BUFFER_SIZE, "O LED está apagado");
   Serial.print("Publica mensagem: ");
   Serial.println(msg);
-  client.publish("engeasier/led", msg);
+  client.publish("8aiswz6279/led", msg);
 }
 }
 
@@ -100,6 +100,7 @@ void setup() {
   Serial.begin(115200);
   setupWiFi();
   client.setServer(broker, 1883); //local para inserção da porta para conexão
+  client.setCallback(callback);
 }
 
 void loop() {
