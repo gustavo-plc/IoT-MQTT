@@ -66,10 +66,10 @@ void reconnect() {
   while (!client.connected()) {
     Serial.print("\nConnecting to ");
     Serial.println(broker);
-    if (client.connect("MQTT-ESP32", brokerUser, brokerPass)) {
+    if (client.connect("ESP32", brokerUser, brokerPass)) {
       Serial.print("\nConnected to ");
       Serial.println(broker);
-      client.subscribe("8aiswz6279/publisher");
+      client.subscribe("iot/publisher");
     } else {
       Serial.println("\nTrying to connect again!");
       delay(5000);
@@ -90,7 +90,7 @@ void callback(char *topic, byte *payload, unsigned int length) {
     snprintf(msg, MSG_BUFFER_SIZE, "O LED está aceso");
     Serial.print("Publica mensagem: ");
     Serial.println(msg);
-    client.publish("8aiswz6279/led", msg);
+    client.publish("iot/led", msg);
   }
 
   if ((char)payload[0] == 'l') {
@@ -98,7 +98,7 @@ void callback(char *topic, byte *payload, unsigned int length) {
     snprintf(msg, MSG_BUFFER_SIZE, "O LED está apagado");
     Serial.print("Publica mensagem: ");
     Serial.println(msg);
-    client.publish("8aiswz6279/led", msg);
+    client.publish("iot/led", msg);
   }
 }
 
@@ -123,18 +123,18 @@ void loop() {
   if (sns == 1) {
     Serial.println("Sensor de Porta Fechado");
     snprintf(msg, MSG_BUFFER_SIZE, "Porta Fechada");
-    client.publish("8aiswz6279/porta", msg);
+    client.publish("iot/porta", msg);
   } else {
     Serial.println("Sensor de Porta Aberto");
     snprintf(msg, MSG_BUFFER_SIZE, "Porta Aberta");
-    client.publish("8aiswz6279/porta", msg);
+    client.publish("iot/porta", msg);
   }
 
   Serial.print("Temperatura: ");
   Serial.print(t);
   Serial.println(F("C"));
   snprintf(msg, MSG_BUFFER_SIZE, "%f", t);
-  client.publish("8aiswz6279/temperatura", msg);
+  client.publish("iot/temperatura", msg);
 
   delay(3000);
 
