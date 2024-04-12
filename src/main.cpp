@@ -9,10 +9,9 @@
 #include "DHT.h"
 
 // //nomeação dos pinos do hardware ESP32
-#define TESTE_SAIDA 32 //variável de saída: fechamento do relé e acionamento dO LED. Pino 32
-// #define I_TEMPUMI 4 //variável de entrada 1 fuzzy: sensor de temperatura/umidade: um só sensor fornecerá dados para duas variáveis de entrada: temperatura e umidade. Pino 4
-// #define I_UMISOLO 34 //variável de entrada 2 fuzzy: sensor de umidade do solo. Pino 34
-// #define DHTTYPE DHT11
+#define LED 32 //variável de saída: fechamento do relé e acionamento do LED. Pino 32
+#define DHT_DATA 4 //variável de entrada 1: sensor de temperatura/umidade: um só sensor fornecerá dados para duas variáveis de entrada: temperatura e umidade. Pino 4
+#define DHTTYPE DHT11
 
 // informações da rede wi-fi
 const char *ssid = "Gustavo's Galaxy M22";
@@ -23,8 +22,11 @@ const char *broker = "b37.mqtt.one";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
+unsigned long lastMsg = 0;
+#define MSG_BUFFER_SIZE (50)
+char msg[MSG_BUFFER_SIZE];
 
-DHT dht(I_TEMPUMI, DHTTYPE);   //inicializando o sensor. 
+DHT dht(DHT_DATA, DHTTYPE);   //inicializando o sensor. 
 
 // funções de configuração
 void setupWiFi() {
@@ -74,6 +76,7 @@ if ((char) payload [0] == 'L')
   Serial.println(msg);
   client.publish("8aiswz6279/led", msg);
 }
+
 
 if ((char) payload [0] == 'l') //caso receba um l(éle minúsculo), altera a variável TESTE_SAIDA para LOW
 {
