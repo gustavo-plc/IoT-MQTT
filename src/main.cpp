@@ -3,6 +3,7 @@
 #include <PubSubClient.h>
 #include <WiFi.h>
 #include "DHT.h"
+#include "SPIFFS.h"
 
 // //nomeação dos pinos do hardware ESP32
 #define LED 32 //variável de saída: fechamento do relé e acionamento do LED. Pino 32
@@ -23,7 +24,6 @@ unsigned long lastMsg = 0;
 char msg[MSG_BUFFER_SIZE];
 
 dht DHT; // inicializando o sensor.
-
 
 // funções de configuração
 void setupWiFi() {
@@ -97,7 +97,28 @@ void setup() {
   setupWiFi();
   client.setServer(broker, 1883); //local para inserção da porta para conexão
   client.setCallback(callback);
+
+
+  if(!SPIFFS.begin(true)){
+    Serial.println("An Error has occurred while mounting SPIFFS");
+    return;
+  }
+  
+  File file = SPIFFS.open("/emqxsl-ca.crt");
+
+  if(!file){
+    Serial.println("Failed to open file for reading");
+    return;
+  }
+  
+  Serial.println("File Content:");
+
+  while(file.available()){
+    Serial.write(file.read());
+  }
+  file.close();
 }
+
 
 void loop() {
 
