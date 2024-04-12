@@ -70,7 +70,7 @@ void callback (char* topic, byte* payload, unsigned int length)
 
 if ((char) payload [0] == 'L') 
 {
-  digitalWrite(TESTE_SAIDA, HIGH); //caso receba um L, altera a variável TESTE_SAIDA para HIGH
+  digitalWrite(LED, HIGH); //caso receba um L, altera a variável TESTE_SAIDA para HIGH
   snprintf (msg, MSG_BUFFER_SIZE, "O LED está aceso");
   Serial.print("Publica mensagem: ");
   Serial.println(msg);
@@ -80,7 +80,7 @@ if ((char) payload [0] == 'L')
 
 if ((char) payload [0] == 'l') //caso receba um l(éle minúsculo), altera a variável TESTE_SAIDA para LOW
 {
-  digitalWrite(TESTE_SAIDA, LOW);
+  digitalWrite(LED, LOW);
   snprintf (msg, MSG_BUFFER_SIZE, "O LED está apagado");
   Serial.print("Publica mensagem: ");
   Serial.println(msg);
@@ -91,7 +91,7 @@ if ((char) payload [0] == 'l') //caso receba um l(éle minúsculo), altera a var
 
 void setup() {
   // //CONFIGURAÇÃO DE CADA PINO DEFINIDO ANTERIORMENTE PARA FUNCIONAREM COMO ENTRADAS OU SAÍDAS
-  pinMode(TESTE_SAIDA,OUTPUT);
+  pinMode(LED,OUTPUT);
   // pinMode(I_TEMPUMI,INPUT);
   // pinMode(I_UMISOLO,INPUT);
 
