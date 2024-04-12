@@ -45,7 +45,7 @@ void reconnect() {
 void setup() {
   Serial.begin(115200);
   setupWiFi();
-  client.setServer(broker, 1883); // Try with 1883 if TLS is not used
+  client.setServer(broker, 1883); //local para inserção da porta para conexão
 }
 
 void loop() {
