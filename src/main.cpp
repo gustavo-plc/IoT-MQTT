@@ -12,9 +12,9 @@
 // informações da rede wi-fi
 const char *ssid = "Gustavo's Galaxy M22";
 const char *pass = "trovao07";
-const char *brokerUser = "8aiswz6279";
-const char *brokerPass = "678gimorst";
-const char *broker = "b37.mqtt.one";
+const char *brokerUser = "gustavoparreira";
+const char *brokerPass = "trovao07";
+const char *broker = "r6062f16.ala.us-east-1.emqxsl.com";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -48,13 +48,15 @@ void reconnect() {
     if (client.connect("koikoikoi", brokerUser, brokerPass)) {
       Serial.print("\nConnected to ");
       Serial.println(broker);
-      client.subscribe ("8aiswz6279/publisher"); //SE CONECTADO AO SERVIDOR MQTT, INSCREVE-SE A ESSE TÓPICO
+      client.subscribe("8aiswz6279/publisher"); //SE CONECTADO AO SERVIDOR MQTT, INSCREVE-SE A ESSE TÓPICO
     } else {
       Serial.println("\nTrying to connect again!");
       delay(5000);
     }
   }
 }
+
+
 
 void callback (char* topic, byte* payload, unsigned int length) 
 {
