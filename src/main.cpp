@@ -9,7 +9,7 @@
 #include "DHT.h"
 
 // //nomeação dos pinos do hardware ESP32
-#define O_IRRIGA 32 //variável de saída fuzzy: fechamento do relé e acionamento da irrigação. Pino 32
+#define TESTE_SAIDA 32 //variável de saída: fechamento do relé e acionamento dO LED. Pino 32
 // #define I_TEMPUMI 4 //variável de entrada 1 fuzzy: sensor de temperatura/umidade: um só sensor fornecerá dados para duas variáveis de entrada: temperatura e umidade. Pino 4
 // #define I_UMISOLO 34 //variável de entrada 2 fuzzy: sensor de umidade do solo. Pino 34
 // #define DHTTYPE DHT11
@@ -49,6 +49,7 @@ void reconnect() {
     if (client.connect("koikoikoi", brokerUser, brokerPass)) {
       Serial.print("\nConnected to ");
       Serial.println(broker);
+      client.subscribe ("8aiswz6279/publisher"); //SE CONECTADO AO SERVIDOR MQTT, INSCREVE-SE A ESSE TÓPICO
     } else {
       Serial.println("\nTrying to connect again!");
       delay(5000);
@@ -56,9 +57,38 @@ void reconnect() {
   }
 }
 
+void callback (char* topic, byte* payload, unsigned int length) 
+{
+  Serial.print ("Message arrived [");
+  Serial.print (topic);
+  Serial.print (" ");
+  for (int i = 0; i < length; i++)
+    Serial.print((char) payload[i]);
+  Serial.println();
+
+if ((char) payload [0] == 'L') 
+{
+  digitalWrite(LED, HIGH);
+  snprintf (msg, MSG_BUFFER_SIZE, "O LED está aceso");
+  Serial.print("Publica mensagem: ");
+  Serial.println(msg);
+  client.publish("engeasier/led", msg);
+}
+
+if ((char) payload [0] == '1') 
+{
+  digitalWrite(LED, LOW);
+  snprintf (msg, MSG_BUFFER_SIZE, "O LED está apagado");
+  Serial.print("Publica mensagem: ");
+  Serial.println(msg);
+  client.publish("engeasier/led", msg);
+}
+}
+
+
 void setup() {
   // //CONFIGURAÇÃO DE CADA PINO DEFINIDO ANTERIORMENTE PARA FUNCIONAREM COMO ENTRADAS OU SAÍDAS
-  // pinMode(O_IRRIGA,OUTPUT);
+  pinMode(TESTE_SAIDA,OUTPUT);
   // pinMode(I_TEMPUMI,INPUT);
   // pinMode(I_UMISOLO,INPUT);
 
