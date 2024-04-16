@@ -3,17 +3,20 @@
 #include <WiFi.h>
 #include "DHT.h"
 #include <WiFiClientSecure.h>
+#include <EEPROM.h>
 
 #define LED 32
 #define SENSOR 4
 #define DHTPIN 2
 #define DHTTYPE DHT11
+#define LED_STATE_ADDRESS 0 //salva o último estado do LED na EEPROM no caso de queda de energia
 
 const char *ssid = "Gustavo's Galaxy M22";
 const char *pass = "trovao07";
 const char *brokerUser = "gustavoparreira";
 const char *brokerPass = "trovao07";
 const char *broker = "r6062f16.ala.us-east-1.emqxsl.com";
+bool lastLedState = false; // Inicializa o estado do LED como desligado por padrão
 
 WiFiClientSecure espClient;
 PubSubClient client(espClient);
@@ -47,6 +50,12 @@ const char* root_ca =
 "CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=\n" \
 "-----END CERTIFICATE-----\n";
 
+void saveLedState(bool state) {   // função para chamar sempre que o estado da lâmpada for alterado.
+
+  EEPROM.put(LED_STATE_ADDRESS, state); //coloca o último estado do LED na EEPROM
+  EEPROM.commit();
+}
+
 void setupWiFi() {
   delay(1000);
   Serial.print("\nConnecting to ");
@@ -74,7 +83,7 @@ void reconnect() {
       client.subscribe("iot/porta");
     } else {
       Serial.println("\nTrying to connect again!");
-      delay(5000);
+      delay(500);
     }
   }
 }
@@ -89,20 +98,24 @@ void callback(char *topic, byte *payload, unsigned int length) {
 
   if ((char)payload[0] == 'L') {
     digitalWrite(LED, HIGH);
-    snprintf(msg, MSG_BUFFER_SIZE, "O LED está aceso");
+    saveLedState(true); // Salve o estado do LED n EEPROM EM CASO DE FALTA DE ENERGIA
+    snprintf(msg, MSG_BUFFER_SIZE, "A lâmpada está acesa!\n");
     Serial.print("Publica mensagem: ");
     Serial.println(msg);
-    client.publish("iot/led", msg);
+    client.publish("iot/lampada", msg);
   }
 
-  if ((char)payload[0] == 'l') {
+  if ((char)payload[0] == 'D') {
     digitalWrite(LED, LOW);
-    snprintf(msg, MSG_BUFFER_SIZE, "O LED está apagado");
+    saveLedState(false); // Salve o estado do LED n EEPROM EM CASO DE FALTA DE ENERGIA
+    snprintf(msg, MSG_BUFFER_SIZE, "A lâmpada está apagada!\n");
     Serial.print("Publica mensagem: ");
     Serial.println(msg);
-    client.publish("iot/led", msg);
+    client.publish("iot/lampada", msg);
   }
 }
+
+
 
 void setup() {
   pinMode(LED, OUTPUT);
@@ -114,31 +127,35 @@ void setup() {
   client.setCallback(callback);
 
   Serial.begin(115200);
+  EEPROM.begin(sizeof(bool)); //inicialização da EEPROM
+  EEPROM.get(LED_STATE_ADDRESS, lastLedState);
+  digitalWrite(LED, lastLedState); // Define o estado do LED de acordo com o último estado salvo na EEPROM
   setupWiFi();
+
 }
 
 void loop() {
   double t = DHT.temperature;
   double h = DHT.humidity;
 
-  int sns = digitalRead(LED);
-  if (sns == 1) {
-    Serial.println("Sensor de Porta Fechado");
-    snprintf(msg, MSG_BUFFER_SIZE, "Porta Fechada");
-    client.publish("iot/porta", msg);
-  } else {
-    Serial.println("Sensor de Porta Aberto");
-    snprintf(msg, MSG_BUFFER_SIZE, "Porta Aberta");
-    client.publish("iot/porta", msg);
-  }
+  // int sns = digitalRead(LED);
+  // if (sns == 1) {
+  //   Serial.println("Sensor de Porta Fechado");
+  //   snprintf(msg, MSG_BUFFER_SIZE, "Porta Fechada");
+  //   client.publish("iot/porta", msg);
+  // } else {
+  //   Serial.println("Sensor de Porta Aberto");
+  //   snprintf(msg, MSG_BUFFER_SIZE, "Porta Aberta");
+  //   client.publish("iot/porta", msg);
+  // }
 
-  Serial.print("Temperatura: ");
-  Serial.print(t);
-  Serial.println(F("C"));
-  snprintf(msg, MSG_BUFFER_SIZE, "%f", t);
-  client.publish("iot/temperatura", msg);
+  // Serial.print("Temperatura: ");
+  // Serial.print(t);
+  // Serial.println(F("C"));
+  // snprintf(msg, MSG_BUFFER_SIZE, "%f", t);
+  // client.publish("iot/temperatura", msg);
 
-  delay(3000);
+  // delay(3000);
 
   if (!client.connected())
     reconnect();
