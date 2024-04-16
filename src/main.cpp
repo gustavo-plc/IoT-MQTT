@@ -69,7 +69,9 @@ void reconnect() {
     if (client.connect("ESP32", brokerUser, brokerPass)) {
       Serial.print("\nConnected to ");
       Serial.println(broker);
-      client.subscribe("iot/publisher");
+      client.subscribe("iot/lampada");
+      client.subscribe("iot/temperatura");
+      client.subscribe("iot/porta");
     } else {
       Serial.println("\nTrying to connect again!");
       delay(5000);
