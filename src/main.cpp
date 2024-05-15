@@ -170,7 +170,7 @@ void loop() {
   customKey = customKeypad.getKey();
   if (customKey){
     Data[data_count] = customKey;  
-        data_count++; 
+        data_count++;
         }
   if(data_count == Password_Length-1){
     if(!strcmp(Data, Master)){
