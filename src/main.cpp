@@ -55,6 +55,7 @@ const char* root_ca =
 
 
 int signalPin = 12; //pino de sinal para porta
+int wrongpass = 13; //pino de sinal para porta
 char Data[Password_Length]; 
 char Master[Password_Length] = "123A456"; 
 byte data_count = 0, master_count = 0;
@@ -139,6 +140,7 @@ void setup() {
   pinMode(LED, OUTPUT);
   pinMode(SENSOR, INPUT);
   pinMode(signalPin, OUTPUT); //pino para controle da porta
+  pinMode(wrongpass, OUTPUT); //pino para controle da porta
 
   espClient.setCACert(root_ca);
 
@@ -176,9 +178,12 @@ void loop() {
       delay(5000);
       digitalWrite(signalPin, LOW);
       }
-    else{
-           delay(1000);
-           }  
+    else
+      {
+      digitalWrite(wrongpass, HIGH); 
+      delay(5000);
+      digitalWrite(wrongpass, LOW);
+      }  
     clearData();  
   }
 
