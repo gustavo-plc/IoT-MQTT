@@ -1,7 +1,9 @@
 #include <Arduino.h>
 #include <PubSubClient.h>
 #include <WiFi.h>
+#include <Wire.h>
 #include "DHT.h"
+#include <Keypad.h>
 #include <WiFiClientSecure.h>
 #include <EEPROM.h>
 
@@ -10,6 +12,7 @@
 #define DHTPIN 2
 #define DHTTYPE DHT11
 #define LED_STATE_ADDRESS 0 //salva o último estado do LED na EEPROM no caso de queda de energia
+#define Password_Length 8
 
 const char *ssid = "Gustavo's Galaxy M22";
 const char *pass = "trovao07";
@@ -49,6 +52,26 @@ const char* root_ca =
 "YSEY1QSteDwsOoBrp+uvFRTp2InBuThs4pFsiv9kuXclVzDAGySj4dzp30d8tbQk\n" \
 "CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=\n" \
 "-----END CERTIFICATE-----\n";
+
+
+int signalPin = 12; //pino de sinal para porta
+char Data[Password_Length]; 
+char Master[Password_Length] = "123A456"; 
+byte data_count = 0, master_count = 0;
+bool Pass_is_good;
+char customKey;
+const byte ROWS = 4;
+const byte COLS = 4;
+char hexaKeys[ROWS][COLS] = {
+  {'1', '2', '3', 'A'},
+  {'4', '5', '6', 'B'},
+  {'7', '8', '9', 'C'},
+  {'*', '0', '#', 'D'}
+};
+byte rowPins[ROWS] = {19, 18, 5, 17};
+byte colPins[COLS] = {16, 4, 0, 2};
+Keypad customKeypad = Keypad(makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS);
+
 
 void saveLedState(bool state) {   // função para chamar sempre que o estado da lâmpada for alterado.
 
@@ -115,6 +138,7 @@ void callback(char *topic, byte *payload, unsigned int length) {
 void setup() {
   pinMode(LED, OUTPUT);
   pinMode(SENSOR, INPUT);
+  pinMode(signalPin, OUTPUT); //pino para controle da porta
 
   espClient.setCACert(root_ca);
 
@@ -129,9 +153,35 @@ void setup() {
 
 }
 
+void clearData(){
+  while(data_count !=0){
+    Data[data_count--] = 0; 
+  }
+  return;
+}
+
+
 void loop() {
   double t = DHT.temperature;
   double h = DHT.humidity;
+
+  customKey = customKeypad.getKey();
+  if (customKey){
+    Data[data_count] = customKey;  
+        data_count++; 
+        }
+  if(data_count == Password_Length-1){
+    if(!strcmp(Data, Master)){
+      digitalWrite(signalPin, HIGH); 
+      delay(5000);
+      digitalWrite(signalPin, LOW);
+      }
+    else{
+           delay(1000);
+           }  
+    clearData();  
+  }
+
 
   // int sns = digitalRead(LED);
   // if (sns == 1) {
@@ -156,3 +206,5 @@ void loop() {
     reconnect();
   client.loop();
 }
+
+
