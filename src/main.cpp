@@ -185,6 +185,7 @@ void loop() {
   static int nc = 0;
 
   tryToConnect();
+  client.loop();
 
   // double t = DHT.temperature;
   // double h = DHT.humidity;
