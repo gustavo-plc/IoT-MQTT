@@ -56,6 +56,8 @@ const char* root_ca =
 
 int signalPin = 12; //pino de sinal para porta
 int wrongpass = 13; //pino de sinal para porta
+int rainOut = 27; //pino de sinal para porta
+int rainIn = 34; //pino de sinal para porta
 char Data[Password_Length]; 
 char Master[Password_Length] = "123A456"; 
 byte data_count = 0, master_count = 0;
@@ -141,6 +143,8 @@ void setup() {
   pinMode(SENSOR, INPUT);
   pinMode(signalPin, OUTPUT); //pino para controle da porta
   pinMode(wrongpass, OUTPUT); //pino para controle da porta
+  pinMode(rainOut, OUTPUT); //pino para controle da janela (abrir caso chova)
+  pinMode(rainIn, INPUT); //pino para controle da janela (abrir caso chova)
 
   espClient.setCACert(root_ca);
 
@@ -162,10 +166,28 @@ void clearData(){
   return;
 }
 
+void tryToConnect() {
+  if (!client.connected()) {
+    if (WiFi.status() == WL_CONNECTED) {
+      reconnect();
+    } else {
+      Serial.println("WiFi não conectada, tentando reconectar...");
+      setupWiFi();
+    }
+  }
+}
+
+
 
 void loop() {
-  double t = DHT.temperature;
-  double h = DHT.humidity;
+
+  static int c = 0; // Agora as variáveis c e nc são estáticas
+  static int nc = 0;
+
+  tryToConnect();
+
+  // double t = DHT.temperature;
+  // double h = DHT.humidity;
 
   customKey = customKeypad.getKey();
   if (customKey){
@@ -207,9 +229,29 @@ void loop() {
 
   // delay(3000);
 
-  if (!client.connected())
-    reconnect();
-  client.loop();
+  // if (!client.connected())
+  //   reconnect();
+  // client.loop();
+
+   int value = analogRead(rainIn); // Ler o valor do sensor de chuva
+  Serial.print("\nValue : \n");
+  Serial.println(value);
+  
+  if (value < 3500) { // Chuva detectada
+    c++;
+    nc = 0; // Reinicia a contagem de leituras sem chuva
+    if (c > 5) {
+      digitalWrite(rainOut, HIGH);
+      Serial.print("\nChuva detectada!\n");
+    }
+  } else { // Sem chuva
+    nc++;
+    if (nc > 5)
+      digitalWrite(rainOut, LOW);
+    c = 0; // Reinicia a contagem de leituras com chuva
+  }
+
+  sleep(1); // Aguarda um tempo antes da próxima leitura
 }
 
 
