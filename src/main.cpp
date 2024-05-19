@@ -189,18 +189,19 @@ void loop() {
   // double t = DHT.temperature;
   // double h = DHT.humidity;
 
-  customKey = customKeypad.getKey();
+  // Verifica se uma tecla foi pressionada
+   customKey = customKeypad.getKey();
   if (customKey){
     Data[data_count] = customKey;  
         data_count++;
-        }
+}
   if(data_count == Password_Length-1){
     if(!strcmp(Data, Master)){
       digitalWrite(signalPin, HIGH); 
       delay(5000);
       digitalWrite(signalPin, LOW);
       }
-    else
+else
       {
       digitalWrite(wrongpass, HIGH); 
       delay(5000);
@@ -237,21 +238,21 @@ void loop() {
   Serial.print("\nValue : \n");
   Serial.println(value);
   
-  if (value < 3500) { // Chuva detectada
+  if (value < 3400) { // Chuva detectada
     c++;
     nc = 0; // Reinicia a contagem de leituras sem chuva
-    if (c > 5) {
+    if (c > 1000) {
       digitalWrite(rainOut, HIGH);
       Serial.print("\nChuva detectada!\n");
     }
-  } else { // Sem chuva
+  } else if (value > 3500){ // Sem chuva
     nc++;
-    if (nc > 5)
+    if (nc > 1000)
       digitalWrite(rainOut, LOW);
     c = 0; // Reinicia a contagem de leituras com chuva
   }
 
-  sleep(1); // Aguarda um tempo antes da próxima leitura
+  // sleep(1); // Aguarda um tempo antes da próxima leitura
 }
 
 
