@@ -148,10 +148,12 @@ void setup() {
   pinMode(signalPin, OUTPUT); //pino para controle da porta
   pinMode(wrongpass, OUTPUT); //pino para controle da porta
   pinMode(rainOut, OUTPUT); //pino para controle da janela (abrir caso chova)
-  pinMode(rainIn, INPUT); //pino para controle da janela (abrir caso chova)
+  pinMode(rainIn, INPUT); 
   
   servo1.attach(rainOut);
   servo1.write(0);
+  servo2.attach(signalPin);
+  servo2.write(0);
 
   espClient.setCACert(root_ca);
 
@@ -205,9 +207,9 @@ void loop() {
 }
   if(data_count == Password_Length-1){
     if(!strcmp(Data, Master)){
-      digitalWrite(signalPin, HIGH); 
-      delay(5000);
-      digitalWrite(signalPin, LOW);
+      servo2.write(90);
+      delay(7000);
+      servo2.write(0);
       }
 else
       {
