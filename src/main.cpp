@@ -6,6 +6,7 @@
 #include <Keypad.h>
 #include <WiFiClientSecure.h>
 #include <EEPROM.h>
+#include <ESP32Servo.h>
 
 #define LED 32
 #define SENSOR 4
@@ -28,6 +29,9 @@ unsigned long lastMsg = 0;
 char msg[MSG_BUFFER_SIZE];
 
 dht DHT;
+Servo servo1;
+Servo servo2;
+
 
 const char* root_ca = 
 "-----BEGIN CERTIFICATE-----\n" \
@@ -56,8 +60,8 @@ const char* root_ca =
 
 int signalPin = 12; //pino de sinal para porta
 int wrongpass = 13; //pino de sinal para porta
-int rainOut = 27; //pino de sinal para porta
-int rainIn = 34; //pino de sinal para porta
+int rainOut = 27; //pino de sinal de saída para servo de controle da janela
+int rainIn = 34; //pino de sinal de entrada vindo do sensor de chuva
 char Data[Password_Length]; 
 char Master[Password_Length] = "123A456"; 
 byte data_count = 0, master_count = 0;
@@ -145,6 +149,9 @@ void setup() {
   pinMode(wrongpass, OUTPUT); //pino para controle da porta
   pinMode(rainOut, OUTPUT); //pino para controle da janela (abrir caso chova)
   pinMode(rainIn, INPUT); //pino para controle da janela (abrir caso chova)
+  
+  servo1.attach(rainOut);
+  servo1.write(0);
 
   espClient.setCACert(root_ca);
 
@@ -239,11 +246,14 @@ else
   Serial.print("\nValue : \n");
   Serial.println(value);
   
+ 
+
   if (value < 3400) { // Chuva detectada
     c++;
     nc = 0; // Reinicia a contagem de leituras sem chuva
     if (c > 1000) {
-      digitalWrite(rainOut, HIGH);
+      servo1.write(90);
+      // digitalWrite(rainOut, HIGH);
       Serial.print("\nChuva detectada!\n");
     }
   } else if (value > 3500){ // Sem chuva
