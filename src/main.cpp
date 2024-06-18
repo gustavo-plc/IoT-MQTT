@@ -2,16 +2,16 @@
 #include <PubSubClient.h>
 #include <WiFi.h>
 #include <Wire.h>
-#include "DHT.h"
+// #include "DHT.h"
 #include <Keypad.h>
 #include <WiFiClientSecure.h>
 #include <EEPROM.h>
 #include <ESP32Servo.h>
 
 #define LED 32
-#define SENSOR 4
-#define DHTPIN 2
-#define DHTTYPE DHT11
+// #define SENSOR 4
+// #define DHTPIN 2
+// #define DHTTYPE DHT11
 #define LED_STATE_ADDRESS 0 //salva o último estado do LED na EEPROM no caso de queda de energia
 #define Password_Length 8
 
@@ -28,7 +28,7 @@ unsigned long lastMsg = 0;
 #define MSG_BUFFER_SIZE (50)
 char msg[MSG_BUFFER_SIZE];
 
-dht DHT;
+// dht DHT;
 Servo servo1;
 Servo servo2;
 
@@ -144,7 +144,7 @@ void callback(char *topic, byte *payload, unsigned int length) {
 
 void setup() {
   pinMode(LED, OUTPUT);
-  pinMode(SENSOR, INPUT);
+  // pinMode(SENSOR, INPUT);
   pinMode(signalPin, OUTPUT); //pino para controle da porta
   pinMode(wrongpass, OUTPUT); //pino para controle da porta
   pinMode(rainOut, OUTPUT); //pino para controle da janela (abrir caso chova)
@@ -250,22 +250,39 @@ else
   
  
 
-  if (value < 3400) { // Chuva detectada
-    c++;
-    nc = 0; // Reinicia a contagem de leituras sem chuva
-    if (c > 1000) {
-      servo1.write(90);
-      // digitalWrite(rainOut, HIGH);
-      Serial.print("\nChuva detectada!\n");
-    }
-  } else if (value > 3500){ // Sem chuva
-    nc++;
-    if (nc > 1000)
-      digitalWrite(rainOut, LOW);
-    c = 0; // Reinicia a contagem de leituras com chuva
-  }
+//   if (value < 3400) { // Chuva detectada
+//     c++;
+//     nc = 0; // Reinicia a contagem de leituras sem chuva
+//     if (c > 1000) {
+//       servo1.write(90);
+//       // digitalWrite(rainOut, HIGH);
+//       Serial.print("\nChuva detectada!\n");
+//     }
+//   } else if (value > 3500){ // Sem chuva
+//     nc++;
+//     if (nc > 1000)
+//       digitalWrite(rainOut, LOW);
+//     c = 0; // Reinicia a contagem de leituras com chuva
+//   }
 
-  // sleep(1); // Aguarda um tempo antes da próxima leitura
+//   // sleep(1); // Aguarda um tempo antes da próxima leitura
+// }
+
+if (value < 3400) { // Chuva detectada
+  c++;
+  nc = 0; // Reinicia a contagem de leituras sem chuva
+  if (c > 100) { // Ajuste o limite de acordo com suas necessidades
+    servo1.write(90); // Abra a janela
+    Serial.println("Chuva detectada!");
+  }
+} else if (value > 3500){ // Sem chuva
+  nc++;
+  if (nc > 100) { // Ajuste o limite de acordo com suas necessidades
+    servo1.write(0); // Feche a janela
+  }
+  c = 0; // Reinicia a contagem de leituras com chuva
+}
+  delay(1000); // Aguarda um segundo antes da próxima iteração do loop
 }
 
 
