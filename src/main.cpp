@@ -62,6 +62,9 @@ int signalPin = 12; //pino de sinal para porta
 int wrongpass = 13; //pino de sinal para porta
 int rainOut = 27; //pino de sinal de saída para servo de controle da janela
 int rainIn = 34; //pino de sinal de entrada vindo do sensor de chuva
+unsigned long previousMillis = 0;
+const long interval = 1000; // Intervalo de 1000ms
+
 char Data[Password_Length]; 
 char Master[Password_Length] = "123A456"; 
 byte data_count = 0, master_count = 0;
@@ -143,6 +146,7 @@ void callback(char *topic, byte *payload, unsigned int length) {
 }
 
 void setup() {
+  Serial.begin(115200);
   pinMode(LED, OUTPUT);
   // pinMode(SENSOR, INPUT);
   pinMode(signalPin, OUTPUT); //pino para controle da porta
@@ -160,7 +164,7 @@ void setup() {
   client.setServer(broker, 8883);
   client.setCallback(callback);
 
-  Serial.begin(115200);
+  
   EEPROM.begin(sizeof(bool)); //inicialização da EEPROM
   EEPROM.get(LED_STATE_ADDRESS, lastLedState);
   digitalWrite(LED, lastLedState); // Define o estado do LED de acordo com o último estado salvo na EEPROM
@@ -193,31 +197,46 @@ void loop() {
   static int c = 0; // Agora as variáveis c e nc são estáticas
   static int nc = 0;
 
+int pos1 = servo1.read();
+  int pos2 = servo2.read();
+
+  Serial.print("Posição do Servo 1: ");
+  Serial.println(pos1);
+  Serial.print("Posição do Servo 2: ");
+  Serial.println(pos2);
+
   tryToConnect();
   client.loop();
+
 
   // double t = DHT.temperature;
   // double h = DHT.humidity;
 
   // Verifica se uma tecla foi pressionada
-   customKey = customKeypad.getKey();
-  if (customKey){
-    Data[data_count] = customKey;  
-        data_count++;
-}
-  if(data_count == Password_Length-1){
-    if(!strcmp(Data, Master)){
-      servo2.write(90);
-      delay(7000);
-      servo2.write(0);
+  //  customKey = customKeypad.getKey();
+//   if (customKey){
+//     Data[data_count] = customKey;  
+//         data_count++;
+// }
+
+char customKey = customKeypad.getKey();
+  if (customKey) {
+    Data[data_count++] = customKey;
+    if (data_count == Password_Length - 1) {
+      Data[data_count] = '\0'; // Adiciona o caractere nulo para finalizar a string
+
+  // Verifica se a senha inserida está correta
+      if (strcmp(Data, Master) == 0) {
+        servo2.write(90); // Abre a porta ou executa ação desejada
+        delay(7000); // Mantém a ação por 7 segundos
+        servo2.write(0); // Fecha a porta ou retorna à posição inicial do servo
+      } else {
+        digitalWrite(wrongpass, HIGH); // Indica que a senha está incorreta
+        delay(5000); // Aguarda por 5 segundos antes de limpar os dados e resetar
+        digitalWrite(wrongpass, LOW); // Desliga o indicador de senha incorreta
       }
-else
-      {
-      digitalWrite(wrongpass, HIGH); 
-      delay(5000);
-      digitalWrite(wrongpass, LOW);
-      }  
-    clearData();  
+      clearData(); // Limpa os dados inseridos
+    }
   }
 
 
@@ -244,9 +263,9 @@ else
   //   reconnect();
   // client.loop();
 
-   int value = analogRead(rainIn); // Ler o valor do sensor de chuva
-  Serial.print("\nValue : \n");
-  Serial.println(value);
+  //  int value = analogRead(rainIn); // Ler o valor do sensor de chuva
+  // Serial.print("\nValue : \n");
+  // Serial.println(value);
   
  
 
@@ -268,21 +287,31 @@ else
 //   // sleep(1); // Aguarda um tempo antes da próxima leitura
 // }
 
-if (value < 3400) { // Chuva detectada
-  c++;
-  nc = 0; // Reinicia a contagem de leituras sem chuva
-  if (c > 100) { // Ajuste o limite de acordo com suas necessidades
-    servo1.write(90); // Abra a janela
-    Serial.println("Chuva detectada!");
-  }
-} else if (value > 3500){ // Sem chuva
-  nc++;
-  if (nc > 100) { // Ajuste o limite de acordo com suas necessidades
-    servo1.write(0); // Feche a janela
-  }
-  c = 0; // Reinicia a contagem de leituras com chuva
+// if (value < 3400) { // Chuva detectada
+//   c++;
+//   nc = 0; // Reinicia a contagem de leituras sem chuva
+//   if (c > 100) { // Ajuste o limite de acordo com suas necessidades
+//     servo1.write(90); // Abra a janela
+//     Serial.println("Chuva detectada!");
+//   }
+// } else if (value > 3500){ // Sem chuva
+//   nc++;
+//   if (nc > 100) { // Ajuste o limite de acordo com suas necessidades
+//     servo1.write(0); // Feche a janela
+//   }
+//   c = 0; // Reinicia a contagem de leituras com chuva
+// }
+
+int value = analogRead(rainIn);
+if (value < 3400) {
+  // Chuva detectada, abre a janela
+  servo1.write(90);
+} else if (value > 3500) {
+  // Sem chuva, fecha a janela
+  servo1.write(0);
 }
-  delay(1000); // Aguarda um segundo antes da próxima iteração do loop
+
+
 }
 
 
