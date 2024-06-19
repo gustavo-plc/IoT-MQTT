@@ -2,17 +2,13 @@
 #include <PubSubClient.h>
 #include <WiFi.h>
 #include <Wire.h>
-// #include "DHT.h"
 #include <Keypad.h>
 #include <WiFiClientSecure.h>
 #include <EEPROM.h>
 #include <ESP32Servo.h>
 
 #define LED 32
-// #define SENSOR 4
-// #define DHTPIN 2
-// #define DHTTYPE DHT11
-#define LED_STATE_ADDRESS 0 //salva o último estado do LED na EEPROM no caso de queda de energia
+#define LED_STATE_ADDRESS 0
 #define Password_Length 8
 
 const char *ssid = "Gustavo's Galaxy M22";
@@ -20,7 +16,7 @@ const char *pass = "trovao07";
 const char *brokerUser = "gustavoparreira";
 const char *brokerPass = "trovao07";
 const char *broker = "r6062f16.ala.us-east-1.emqxsl.com";
-bool lastLedState = false; // Inicializa o estado do LED como desligado por padrão
+bool lastLedState = false;
 
 WiFiClientSecure espClient;
 PubSubClient client(espClient);
@@ -28,10 +24,8 @@ unsigned long lastMsg = 0;
 #define MSG_BUFFER_SIZE (50)
 char msg[MSG_BUFFER_SIZE];
 
-// dht DHT;
 Servo servo1;
 Servo servo2;
-
 
 const char* root_ca = 
 "-----BEGIN CERTIFICATE-----\n" \
@@ -57,13 +51,12 @@ const char* root_ca =
 "CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=\n" \
 "-----END CERTIFICATE-----\n";
 
-
-int signalPin = 12; //pino de sinal para porta
-int wrongpass = 13; //pino de sinal para porta
-int rainOut = 27; //pino de sinal de saída para servo de controle da janela
-int rainIn = 34; //pino de sinal de entrada vindo do sensor de chuva
+int signalPin = 12;
+int wrongpass = 13;
+int rainOut = 27;
+int rainIn = 34;
 unsigned long previousMillis = 0;
-const long interval = 1000; // Intervalo de 1000ms
+const long interval = 100; // Reduzir o intervalo para 100ms
 
 char Data[Password_Length]; 
 char Master[Password_Length] = "123A456"; 
@@ -82,10 +75,8 @@ byte rowPins[ROWS] = {19, 18, 5, 17};
 byte colPins[COLS] = {16, 4, 0, 2};
 Keypad customKeypad = Keypad(makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS);
 
-
-void saveLedState(bool state) {   // função para chamar sempre que o estado da lâmpada for alterado.
-
-  EEPROM.put(LED_STATE_ADDRESS, state); //coloca o último estado do LED na EEPROM
+void saveLedState(bool state) {
+  EEPROM.put(LED_STATE_ADDRESS, state);
   EEPROM.commit();
 }
 
@@ -128,7 +119,7 @@ void callback(char *topic, byte *payload, unsigned int length) {
 
   if ((char)payload[0] == 'L') {
     digitalWrite(LED, HIGH);
-    saveLedState(true); // Salve o estado do LED n EEPROM EM CASO DE FALTA DE ENERGIA
+    saveLedState(true);
     snprintf(msg, MSG_BUFFER_SIZE, "A lâmpada está acesa!\n");
     Serial.print("Publica mensagem: ");
     Serial.println(msg);
@@ -137,7 +128,7 @@ void callback(char *topic, byte *payload, unsigned int length) {
 
   if ((char)payload[0] == 'D') {
     digitalWrite(LED, LOW);
-    saveLedState(false); // Salve o estado do LED n EEPROM EM CASO DE FALTA DE ENERGIA
+    saveLedState(false);
     snprintf(msg, MSG_BUFFER_SIZE, "A lâmpada está apagada!\n");
     Serial.print("Publica mensagem: ");
     Serial.println(msg);
@@ -148,10 +139,9 @@ void callback(char *topic, byte *payload, unsigned int length) {
 void setup() {
   Serial.begin(115200);
   pinMode(LED, OUTPUT);
-  // pinMode(SENSOR, INPUT);
-  pinMode(signalPin, OUTPUT); //pino para controle da porta
-  pinMode(wrongpass, OUTPUT); //pino para controle da porta
-  pinMode(rainOut, OUTPUT); //pino para controle da janela (abrir caso chova)
+  pinMode(signalPin, OUTPUT);
+  pinMode(wrongpass, OUTPUT);
+  pinMode(rainOut, OUTPUT);
   pinMode(rainIn, INPUT); 
   
   servo1.attach(rainOut);
@@ -160,23 +150,19 @@ void setup() {
   servo2.write(0);
 
   espClient.setCACert(root_ca);
-
   client.setServer(broker, 8883);
   client.setCallback(callback);
-
-  
-  EEPROM.begin(sizeof(bool)); //inicialização da EEPROM
+ 
+  EEPROM.begin(sizeof(bool));
   EEPROM.get(LED_STATE_ADDRESS, lastLedState);
-  digitalWrite(LED, lastLedState); // Define o estado do LED de acordo com o último estado salvo na EEPROM
+  digitalWrite(LED, lastLedState);
   setupWiFi();
-
 }
 
-void clearData(){
-  while(data_count !=0){
+void clearData() {
+  while(data_count != 0) {
     Data[data_count--] = 0; 
   }
-  return;
 }
 
 void tryToConnect() {
@@ -190,128 +176,66 @@ void tryToConnect() {
   }
 }
 
-
-
 void loop() {
-
-  static int c = 0; // Agora as variáveis c e nc são estáticas
+  static int c = 0;
   static int nc = 0;
-
-int pos1 = servo1.read();
-  int pos2 = servo2.read();
-
-  Serial.print("Posição do Servo 1: ");
-  Serial.println(pos1);
-  Serial.print("Posição do Servo 2: ");
-  Serial.println(pos2);
+  static unsigned long prevMillisPassword = 0;
+  static unsigned long prevMillisRain = 0;
+  static unsigned long servoOpenMillis = 0;
+  static bool isServo2Open = false;
+  static bool wrongPassLedOn = false;
+  
+  unsigned long currentMillis = millis();
 
   tryToConnect();
   client.loop();
 
-
-  // double t = DHT.temperature;
-  // double h = DHT.humidity;
-
-  // Verifica se uma tecla foi pressionada
-  //  customKey = customKeypad.getKey();
-//   if (customKey){
-//     Data[data_count] = customKey;  
-//         data_count++;
-// }
-
-char customKey = customKeypad.getKey();
+  char customKey = customKeypad.getKey();
   if (customKey) {
     Data[data_count++] = customKey;
     if (data_count == Password_Length - 1) {
-      Data[data_count] = '\0'; // Adiciona o caractere nulo para finalizar a string
+      Data[data_count] = '\0';
 
-  // Verifica se a senha inserida está correta
       if (strcmp(Data, Master) == 0) {
-        servo2.write(90); // Abre a porta ou executa ação desejada
-        delay(7000); // Mantém a ação por 7 segundos
-        servo2.write(0); // Fecha a porta ou retorna à posição inicial do servo
+        servo2.write(90);
+        isServo2Open = true;
+        servoOpenMillis = currentMillis;
       } else {
-        digitalWrite(wrongpass, HIGH); // Indica que a senha está incorreta
-        delay(5000); // Aguarda por 5 segundos antes de limpar os dados e resetar
-        digitalWrite(wrongpass, LOW); // Desliga o indicador de senha incorreta
+        digitalWrite(wrongpass, HIGH);
+        wrongPassLedOn = true;
+        prevMillisPassword = currentMillis;
       }
-      clearData(); // Limpa os dados inseridos
+      clearData();
     }
   }
 
+  if (isServo2Open && (currentMillis - servoOpenMillis >= 7000)) {
+    servo2.write(0);
+    isServo2Open = false;
+  }
 
-  // int sns = digitalRead(LED);
-  // if (sns == 1) {
-  //   Serial.println("Sensor de Porta Fechado");
-  //   snprintf(msg, MSG_BUFFER_SIZE, "Porta Fechada");
-  //   client.publish("iot/porta", msg);
-  // } else {
-  //   Serial.println("Sensor de Porta Aberto");
-  //   snprintf(msg, MSG_BUFFER_SIZE, "Porta Aberta");
-  //   client.publish("iot/porta", msg);
-  // }
+  if (wrongPassLedOn && (currentMillis - prevMillisPassword >= 5000)) {
+    digitalWrite(wrongpass, LOW);
+    wrongPassLedOn = false;
+  }
 
-  // Serial.print("Temperatura: ");
-  // Serial.print(t);
-  // Serial.println(F("C"));
-  // snprintf(msg, MSG_BUFFER_SIZE, "%f", t);
-  // client.publish("iot/temperatura", msg);
+  if (currentMillis - prevMillisRain >= interval) {
+    prevMillisRain = currentMillis;
+    int value = analogRead(rainIn);
 
-  // delay(3000);
-
-  // if (!client.connected())
-  //   reconnect();
-  // client.loop();
-
-  //  int value = analogRead(rainIn); // Ler o valor do sensor de chuva
-  // Serial.print("\nValue : \n");
-  // Serial.println(value);
-  
- 
-
-//   if (value < 3400) { // Chuva detectada
-//     c++;
-//     nc = 0; // Reinicia a contagem de leituras sem chuva
-//     if (c > 1000) {
-//       servo1.write(90);
-//       // digitalWrite(rainOut, HIGH);
-//       Serial.print("\nChuva detectada!\n");
-//     }
-//   } else if (value > 3500){ // Sem chuva
-//     nc++;
-//     if (nc > 1000)
-//       digitalWrite(rainOut, LOW);
-//     c = 0; // Reinicia a contagem de leituras com chuva
-//   }
-
-//   // sleep(1); // Aguarda um tempo antes da próxima leitura
-// }
-
-// if (value < 3400) { // Chuva detectada
-//   c++;
-//   nc = 0; // Reinicia a contagem de leituras sem chuva
-//   if (c > 100) { // Ajuste o limite de acordo com suas necessidades
-//     servo1.write(90); // Abra a janela
-//     Serial.println("Chuva detectada!");
-//   }
-// } else if (value > 3500){ // Sem chuva
-//   nc++;
-//   if (nc > 100) { // Ajuste o limite de acordo com suas necessidades
-//     servo1.write(0); // Feche a janela
-//   }
-//   c = 0; // Reinicia a contagem de leituras com chuva
-// }
-
-int value = analogRead(rainIn);
-if (value < 3400) {
-  // Chuva detectada, abre a janela
-  servo1.write(90);
-} else if (value > 3500) {
-  // Sem chuva, fecha a janela
-  servo1.write(0);
+    if (value < 3400) {
+      c++;
+      nc = 0;
+      if (c > 5) { // Reduzi o limite para aumentar a sensibilidade
+        servo1.write(90);
+        Serial.println("Chuva detectada!");
+      }
+    } else {
+      nc++;
+      if (nc > 5) {
+        servo1.write(0);
+      }
+      c = 0;
+    }
+  }
 }
-
-
-}
-
-
