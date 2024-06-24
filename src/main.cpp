@@ -145,7 +145,7 @@ void setup() {
   pinMode(rainIn, INPUT); 
   
   servo1.attach(rainOut);
-  servo1.write(1);
+  servo1.write(60);
   servo2.attach(signalPin);
   servo2.write(0);
 
@@ -234,13 +234,13 @@ void loop() {
       c++;
       nc = 0;
       if (c > 5) { // Reduzi o limite para aumentar a sensibilidade
-        servo1.write(1);
+        servo1.write(60);
         Serial.println("Chuva detectada!");
       }
     } else {
       nc++;
       if (nc > 5) {
-        servo1.write(40); //regulagem do ângulo de abertura da janela
+        servo1.write(1); //regulagem do ângulo de abertura da janela
       }
       c = 0;
     }
