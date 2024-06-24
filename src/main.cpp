@@ -145,7 +145,7 @@ void setup() {
   pinMode(rainIn, INPUT); 
   
   servo1.attach(rainOut);
-  servo1.write(0);
+  servo1.write(1);
   servo2.attach(signalPin);
   servo2.write(0);
 
@@ -200,10 +200,12 @@ void loop() {
         servo2.write(90);
         isServo2Open = true;
         servoOpenMillis = currentMillis;
+        Serial.println("Senha correta! Servo acionado.");
       } else {
         digitalWrite(wrongpass, HIGH);
         wrongPassLedOn = true;
         prevMillisPassword = currentMillis;
+        Serial.println("Senha incorreta!");
       }
       clearData();
     }
@@ -223,19 +225,35 @@ void loop() {
     prevMillisRain = currentMillis;
     int value = analogRead(rainIn);
 
+    // Adiciona a impressão do valor lido pelo sensor de chuva
+    Serial.print("Valor lido pelo sensor de chuva: ");
+    Serial.println(value);
+
+    
     if (value < 3400) {
       c++;
       nc = 0;
       if (c > 5) { // Reduzi o limite para aumentar a sensibilidade
-        servo1.write(90);
+        servo1.write(1);
         Serial.println("Chuva detectada!");
       }
     } else {
       nc++;
       if (nc > 5) {
-        servo1.write(0);
+        servo1.write(40); //regulagem do ângulo de abertura da janela
       }
       c = 0;
     }
+    
+// Adiciona a impressão das posições dos servos
+    Serial.print("Posição do servo1: ");
+    Serial.println(servo1.read());
+    Serial.print("Posição do servo2: ");
+    Serial.println(servo2.read());
+
+
+    // Adiciona a impressão dos valores digitados no keypad
+    Serial.print("Tecla digitada: ");
+    Serial.println(customKey);
   }
 }
