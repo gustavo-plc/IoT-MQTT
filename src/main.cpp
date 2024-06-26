@@ -147,7 +147,7 @@ void setup() {
   servo1.attach(rainOut);
   servo1.write(0); //ângulo inicial do servo da janela (condição de não chuva)
   servo2.attach(signalPin);
-  servo2.write(180);
+  servo2.write(90); //ângulo mínimo de abertura do servo da porta (condição de porta fechada)
 
   espClient.setCACert(root_ca);
   client.setServer(broker, 8883);
@@ -197,7 +197,7 @@ void loop() {
       Data[data_count] = '\0';
 
       if (strcmp(Data, Master) == 0) {
-        servo2.write(90);
+        servo2.write(180); //ângulo max de abertura do servo da porta (condição de porta aberta)
         isServo2Open = true;
         servoOpenMillis = currentMillis;
         Serial.println("Senha correta! Servo acionado.");
@@ -212,7 +212,7 @@ void loop() {
   }
 
   if (isServo2Open && (currentMillis - servoOpenMillis >= 7000)) {
-    servo2.write(180);
+    servo2.write(90); //ângulo min de abertura do servo da porta (condição de porta fechada)
     isServo2Open = false;
   }
 
