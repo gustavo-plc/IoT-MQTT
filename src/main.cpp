@@ -145,9 +145,9 @@ void setup() {
   pinMode(rainIn, INPUT); 
   
   servo1.attach(rainOut);
-  servo1.write(60);
+  servo1.write(0); //ângulo inicial do servo da janela (condição de não chuva)
   servo2.attach(signalPin);
-  servo2.write(0);
+  servo2.write(180);
 
   espClient.setCACert(root_ca);
   client.setServer(broker, 8883);
@@ -212,7 +212,7 @@ void loop() {
   }
 
   if (isServo2Open && (currentMillis - servoOpenMillis >= 7000)) {
-    servo2.write(0);
+    servo2.write(180);
     isServo2Open = false;
   }
 
@@ -234,13 +234,13 @@ void loop() {
       c++;
       nc = 0;
       if (c > 5) { // Reduzi o limite para aumentar a sensibilidade
-        servo1.write(60);
+        servo1.write(90); //regulagem do ângulo de abertura da janela quando chuva
         Serial.println("Chuva detectada!");
       }
     } else {
       nc++;
       if (nc > 5) {
-        servo1.write(1); //regulagem do ângulo de abertura da janela
+        servo1.write(0); //regulagem do ângulo de abertura da janela quando não chuva
       }
       c = 0;
     }
