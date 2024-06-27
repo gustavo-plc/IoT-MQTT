@@ -197,7 +197,7 @@ void loop() {
       Data[data_count] = '\0';
 
       if (strcmp(Data, Master) == 0) {
-        servo2.write(180); //ângulo max de abertura do servo da porta (condição de porta aberta)
+        servo2.write(170); //ângulo max de abertura do servo da porta (condição de porta aberta)
         isServo2Open = true;
         servoOpenMillis = currentMillis;
         Serial.println("Senha correta! Servo acionado.");
